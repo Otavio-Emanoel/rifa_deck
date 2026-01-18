@@ -62,3 +62,8 @@ final checkoutVendaProvider = FutureProvider.family<void, ({
   ref.invalidate(bilhetesVendidosProvider(params.rifaId));
   ref.invalidate(bilhetesReservadosProvider(params.rifaId));
 });
+// Provider para sorteio (obtém um bilhete vendido aleatório)
+final sorteioProvider = FutureProvider.family<Bilhete?, int>((ref, rifaId) async {
+  final isarService = ref.watch(isarServiceProvider);
+  return await isarService.obterBilheteSorteio(rifaId);
+});

@@ -200,6 +200,19 @@ class IsarService {
     return result.map((map) => _bilheteFromMap(map)).toList();
   }
 
+  /// Obtém um bilhete vendido aleatório para sorteio
+  Future<Bilhete?> obterBilheteSorteio(int rifaId) async {
+    final result = await _db.query(
+      'bilhetes',
+      where: 'rifaId = ? AND status = ?',
+      whereArgs: [rifaId, 'vendido'],
+    );
+    if (result.isEmpty) return null;
+    final bilhetes = result.map((map) => _bilheteFromMap(map)).toList();
+    final random = DateTime.now().millisecondsSinceEpoch % bilhetes.length;
+    return bilhetes[random];
+  }
+
   Future<void> venderBilhetes({
     required int rifaId,
     required int participanteId,

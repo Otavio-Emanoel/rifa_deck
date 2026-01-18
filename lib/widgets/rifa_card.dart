@@ -7,6 +7,7 @@ class RifaCard extends StatelessWidget {
   final int bilhetesReservados;
   final VoidCallback onTapAcao;
   final VoidCallback? onTapCompradores;
+  final VoidCallback? onTapSorteio;
 
   const RifaCard({
     Key? key,
@@ -15,6 +16,7 @@ class RifaCard extends StatelessWidget {
     required this.bilhetesReservados,
     required this.onTapAcao,
     this.onTapCompradores,
+    this.onTapSorteio,
   }) : super(key: key);
 
   @override
@@ -120,7 +122,7 @@ class RifaCard extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Botões de ação
+            // Botões de ação (primeira linha)
             Row(
               children: [
                 Expanded(
@@ -132,6 +134,7 @@ class RifaCard extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colorScheme.primary,
                       foregroundColor: colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
                 ),
@@ -140,12 +143,29 @@ class RifaCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: onTapCompradores,
-                      icon: const Icon(Icons.people),
-                      label: const Text('Compradores'),
+                      icon: const Icon(Icons.people, size: 18),
+                      label: const Text('Compradores', overflow: TextOverflow.ellipsis),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
               ],
             ),
+            const SizedBox(height: 8),
+            // Botões de ação (segunda linha)
+            if (onTapSorteio != null)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onTapSorteio,
+                  icon: const Icon(Icons.shuffle),
+                  label: const Text('Sorteio'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
