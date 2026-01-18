@@ -153,7 +153,6 @@ class _SorteioScreenState extends ConsumerState<SorteioScreen>
   Future<void> _mostrarDetalhesGanhador(Bilhete bilhete, int posicao) async {
     try {
       final participantes = await ref.read(participantesRifaProvider(widget.rifaId).future);
-      final rifaAsync = ref.read(rifaPorIdProvider(widget.rifaId));
       
       final comprador = participantes.firstWhere(
         (p) => p.numeroBilhetes.contains(bilhete.numero),
@@ -168,17 +167,23 @@ class _SorteioScreenState extends ConsumerState<SorteioScreen>
 
       if (!mounted) return;
 
+      // Busca a rifa de forma assíncrona
+      Rifa? rifa;
+      try {
+        rifa = await ref.read(rifaPorIdProvider(widget.rifaId).future);
+      } catch (e) {
+        rifa = null;
+      }
+
+      if (!mounted) return;
+
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        builder: (context) => rifaAsync.when(
-          data: (rifa) => _construirModalGanhador(comprador, bilhete, posicao, rifa),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Erro: $e')),
-        ),
+        builder: (context) => _construirModalGanhador(comprador, bilhete, posicao, rifa),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -197,128 +202,167 @@ class _SorteioScreenState extends ConsumerState<SorteioScreen>
         ? posicao == 0 ? '🥇 1º Lugar' : posicao == 1 ? '🥈 2º Lugar' : posicao == 2 ? '🥉 3º Lugar' : '${posicao + 1}º Lugar'
         : 'Sorteado';
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-        top: 24,
-        left: 24,
-        right: 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
+    // Estado local para controlar visibilidade do telefone
+    bool telefoneVisivel = false;
+
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        String obterTelefoneCensurado() {
+          if (comprador.telefone == null) return '';
+          if (telefoneVisivel) return comprador.telefone!;
+          
+          // Censura: (11) 9****-****
+          final tel = comprador.telefone!;
+          if (tel.length >= 10) {
+            final ddd = tel.substring(0, tel.indexOf(')') + 1);
+            final inicio = tel.substring(tel.indexOf(')') + 2, tel.indexOf(')') + 4);
+            return '$ddd $inicio****-****';
+          }
+          return '***';
+        }
+
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            top: 24,
+            left: 24,
+            right: 24,
           ),
-          const SizedBox(height: 24),
-          // Ícone de celebração
-          Icon(
-            Icons.emoji_events,
-            size: 64,
-            color: posicao == 0 ? Colors.amber : Colors.green,
-          ),
-          const SizedBox(height: 16),
-          // Colocação
-          Text(
-            colocacao,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: posicao == 0 ? Colors.amber : Colors.green,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
                 ),
-          ),
-          const SizedBox(height: 8),
-          // Número do bilhete
-          Chip(
-            label: Text(
-              'Bilhete #${bilhete.numero.toString().padLeft(3, '0')}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
               ),
-            ),
-            backgroundColor: _obterCorPosicao(posicao),
-          ),
-          const SizedBox(height: 24),
-          // Dados do ganhador
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(.3),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ganhador',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+              const SizedBox(height: 24),
+              // Ícone de celebração
+              Icon(
+                Icons.emoji_events,
+                size: 64,
+                color: posicao == 0 ? Colors.amber : Colors.green,
+              ),
+              const SizedBox(height: 16),
+              // Colocação
+              Text(
+                colocacao,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: posicao == 0 ? Colors.amber : Colors.green,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              // Número do bilhete
+              Chip(
+                label: Text(
+                  'Bilhete #${bilhete.numero.toString().padLeft(3, '0')}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  comprador.nome,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                backgroundColor: _obterCorPosicao(posicao),
+              ),
+              const SizedBox(height: 24),
+              // Dados do ganhador
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(.3),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                if (comprador.telefone != null) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.phone,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        comprador.telefone!,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ganhador',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      comprador.nome,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    if (comprador.telefone != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.phone,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              obterTelefoneCensurado(),
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              telefoneVisivel ? Icons.visibility_off : Icons.visibility,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setModalState(() {
+                                telefoneVisivel = !telefoneVisivel;
+                              });
+                            },
+                            tooltip: telefoneVisivel ? 'Ocultar telefone' : 'Mostrar telefone',
+                          ),
+                        ],
                       ),
                     ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Botões
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: comprador.telefone != null
+                          ? () => _enviarMensagemParabens(comprador, bilhete, posicao, rifa)
+                          : null,
+                      icon: const Icon(Icons.send, size: 20),
+                      label: const Text('WhatsApp'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _copiarMensagemParabens(comprador, bilhete, posicao, rifa),
+                      icon: const Icon(Icons.copy, size: 20),
+                      label: const Text('Copiar'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
                   ),
                 ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Botões
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: comprador.telefone != null
-                  ? () => _enviarMensagemParabens(comprador, bilhete, posicao, rifa)
-                  : null,
-              icon: const Icon(Icons.send),
-              label: const Text('Enviar Mensagem de Parabéns'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-            ),
+              const SizedBox(height: 24),
+            ],
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _copiarMensagemParabens(comprador, bilhete, posicao, rifa),
-              icon: const Icon(Icons.copy),
-              label: const Text('Copiar Mensagem'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -328,17 +372,58 @@ class _SorteioScreenState extends ConsumerState<SorteioScreen>
     int posicao,
     Rifa? rifa,
   ) async {
-    final mensagem = _gerarMensagemParabens(comprador, bilhete, posicao, rifa);
-    final telefone = comprador.telefone!.replaceAll(RegExp(r'\D'), '');
-    
-    final url = Uri.parse('https://wa.me/55$telefone?text=${Uri.encodeComponent(mensagem)}');
-    
-    if (await canLaunchUrl(url)) {
+    try {
+      final mensagem = _gerarMensagemParabens(comprador, bilhete, posicao, rifa);
+      final telefone = comprador.telefone!.replaceAll(RegExp(r'\D'), '');
+      
+      // Remove 0 inicial se houver
+      String numeroLimpo = telefone;
+      if (numeroLimpo.startsWith('0')) {
+        numeroLimpo = numeroLimpo.substring(1);
+      }
+      
+      // Tenta apenas o método mais simples e confiável
+      final whatsappUrl = 'https://wa.me/55$numeroLimpo?text=${Uri.encodeComponent(mensagem)}';
+      final url = Uri.parse(whatsappUrl);
+      
+      // Tenta abrir
       await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
+      
       if (mounted) {
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível abrir o WhatsApp')),
+          const SnackBar(
+            content: Text('Abrindo WhatsApp...'),
+            backgroundColor: Color(0xFF25D366),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Erro ao abrir WhatsApp: $e');
+      if (mounted) {
+        // Copia automaticamente e avisa o usuário
+        _copiarMensagemParabens(comprador, bilhete, posicao, rifa);
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: const [
+                Icon(Icons.info_outline, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('Mensagem Copiada'),
+              ],
+            ),
+            content: Text(
+              'A mensagem foi copiada! Cole manualmente no WhatsApp de ${comprador.nome}:\n\n${comprador.telefone ?? 'Sem telefone'}',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
         );
       }
     }
