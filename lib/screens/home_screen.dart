@@ -322,39 +322,152 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
-class _HeaderStats extends StatelessWidget {
+class _HeaderStats extends ConsumerWidget {
   const _HeaderStats();
 
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      children: const [
-        Expanded(
-          child: _GlassStat(
-            label: 'Campanhas',
-            value: '—',
-            icon: Icons.layers,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rifasAsync = ref.watch(rifasAtivasProvider);
+
+    return rifasAsync.when(
+      data: (rifas) {
+        return FutureBuilder<(int, int, int)>(
+          future: _calcularStats(ref, rifas),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              final (campanhas, vendas, reservas) = snapshot.data!;
+              return Row(
+                children: [
+                  Expanded(
+                    child: _GlassStat(
+                      label: 'Campanhas',
+                      value: '$campanhas',
+                      icon: Icons.layers,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _GlassStat(
+                      label: 'Vendas',
+                      value: '$vendas',
+                      icon: Icons.shopping_bag,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _GlassStat(
+                      label: 'Reservas',
+                      value: '$reservas',
+                      icon: Icons.schedule,
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              children: const [
+                Expanded(
+                  child: _GlassStat(
+                    label: 'Campanhas',
+                    value: '—',
+                    icon: Icons.layers,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: _GlassStat(
+                    label: 'Vendas',
+                    value: '—',
+                    icon: Icons.shopping_bag,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: _GlassStat(
+                    label: 'Reservas',
+                    value: '—',
+                    icon: Icons.schedule,
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+      loading: () => Row(
+        children: const [
+          Expanded(
+            child: _GlassStat(
+              label: 'Campanhas',
+              value: '—',
+              icon: Icons.layers,
+            ),
           ),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: _GlassStat(
-            label: 'Vendas',
-            value: '—',
-            icon: Icons.shopping_bag,
+          SizedBox(width: 12),
+          Expanded(
+            child: _GlassStat(
+              label: 'Vendas',
+              value: '—',
+              icon: Icons.shopping_bag,
+            ),
           ),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: _GlassStat(
-            label: 'Reservas',
-            value: '—',
-            icon: Icons.schedule,
+          SizedBox(width: 12),
+          Expanded(
+            child: _GlassStat(
+              label: 'Reservas',
+              value: '—',
+              icon: Icons.schedule,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
+      error: (_, __) => Row(
+        children: const [
+          Expanded(
+            child: _GlassStat(
+              label: 'Campanhas',
+              value: '0',
+              icon: Icons.layers,
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: _GlassStat(
+              label: 'Vendas',
+              value: '0',
+              icon: Icons.shopping_bag,
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: _GlassStat(
+              label: 'Reservas',
+              value: '0',
+              icon: Icons.schedule,
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<(int, int, int)> _calcularStats(WidgetRef ref, List<dynamic> rifas) async {
+    int vendas = 0;
+    int reservas = 0;
+
+    for (final rifa in rifas) {
+      try {
+        final bilhetesVendidos = await ref.read(bilhetesVendidosProvider(rifa.id).future);
+        final bilhetesReservados = await ref.read(bilhetesReservadosProvider(rifa.id).future);
+        vendas += bilhetesVendidos.length;
+        reservas += bilhetesReservados.length;
+      } catch (_) {
+        // Ignora erros
+      }
+    }
+
+    return (rifas.length, vendas, reservas);
   }
 }
 
@@ -430,11 +543,6 @@ class _QuickActions extends StatelessWidget {
       (Icons.add_circle, 'Nova Rifa', () async {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const CreateRifaScreen()),
-        );
-      }),
-      (Icons.qr_code_2, 'Vender', () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vender em desenvolvimento')),
         );
       }),
       (Icons.insights, 'Relatórios', () {
