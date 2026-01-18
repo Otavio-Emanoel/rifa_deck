@@ -1,16 +1,74 @@
-# controle_rifas
 
-A new Flutter project.
+# 🎟️ Rifa_Deck
+**Gerenciador Inteligente de Rifas e Sorteios**
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## ✨ Sobre o Projeto
 
-A few resources to get you started if this is your first Flutter project:
+O **Rifa_Deck** nasceu de uma necessidade real: otimizar a arrecadação de fundos para o meu intercâmbio cultural. A gestão manual de rifas (papel e caneta) torna-se inviável quando um único comprador adquire múltiplos números.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### 🚩 O Problema
+- Redundância de dados
+- Dificuldade em realizar sorteios justos apenas com números vendidos
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 💡 A Solução
+Um app local-first que modela a relação 1-para-N entre **Compradores** e **Bilhetes**.
+
+---
+
+## 🛠️ Stack & Tecnologias
+
+- **Framework:** Flutter (Dart)
+- **Banco de Dados:** Isar (NoSQL de alta performance para mobile)
+- **Gerenciamento de Estado:** Riverpod
+- **Design:** Material You (Material 3)
+
+---
+
+## 🚀 Funcionalidades
+
+- Seleção múltipla de números (Bulk Selection)
+- Algoritmo de sorteio randomizado (apenas entre bilhetes vendidos)
+- Histórico de vendas
+- Gestão de múltiplas campanhas simultâneas
+
+---
+
+## 📋 Roadmap (em breve)
+- [ ] Cadastro de compradores
+- [ ] Exportação de resultados
+- [ ] Notificações
+
+---
+
+## 📱 Screenshots (em breve)
+
+---
+
+## 📦 Instalação
+
+1. Clone o repositório:
+	```bash
+	git clone https://github.com/seuusuario/Rifa_Deck.git
+	```
+2. Instale as dependências:
+	```bash
+	flutter pub get
+	```
+3. Execute o app:
+	```bash
+	flutter run
+	```
+
+---
+
+## 🤝 Contribuição
+
+Contribuições são bem-vindas! Sinta-se à vontade para abrir issues e pull requests.
+
+---
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT.
