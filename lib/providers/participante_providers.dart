@@ -2,6 +2,7 @@ import 'package:riverpod/riverpod.dart';
 import '../services/isar_service.dart';
 import '../models/participante.dart';
 import 'rifa_providers.dart';
+import 'bilhete_providers.dart';
 
 // Provider para listar todos os participantes
 final todosParticipantesProvider = FutureProvider((ref) async {
@@ -89,6 +90,7 @@ final atualizarParticipanteProvider = FutureProvider.family<void, ({
   int id,
   String nome,
   String? telefone,
+  int rifaId,
 })>((ref, params) async {
   final isarService = ref.watch(isarServiceProvider);
   final participante = Participante()
@@ -96,6 +98,11 @@ final atualizarParticipanteProvider = FutureProvider.family<void, ({
     ..nome = params.nome
     ..telefone = params.telefone;
   await isarService.atualizarParticipante(participante);
+  // Invalida para recarregar
+  ref.invalidate(participantesRifaProvider(params.rifaId));
+  ref.invalidate(bilhetesRifaProvider(params.rifaId));
+  ref.invalidate(bilhetesVendidosProvider(params.rifaId));
+  ref.invalidate(bilhetesReservadosProvider(params.rifaId));
 });
 
 /// Provider para adicionar bilhetes a um participante
@@ -111,12 +118,23 @@ final adicionarBilhetesAoParticipanteProvider = FutureProvider.family<void, ({
     numerosBilhetes: params.numerosBilhetes,
     status: 'vendido',
   );
+  // Invalida para recarregar
+  ref.invalidate(participantesRifaProvider(params.rifaId));
+  ref.invalidate(bilhetesRifaProvider(params.rifaId));
+  ref.invalidate(bilhetesVendidosProvider(params.rifaId));
+  ref.invalidate(bilhetesReservadosProvider(params.rifaId));
 });
 
 /// Provider para remover bilhetes de um participante
 final removerBilhetesDoParticipanteProvider = FutureProvider.family<void, ({
   List<int> bilheteIds,
+  int rifaId,
 })>((ref, params) async {
   final isarService = ref.watch(isarServiceProvider);
   await isarService.limparParticipanteDeBilhetes(params.bilheteIds);
+  // Invalida para recarregar
+  ref.invalidate(participantesRifaProvider(params.rifaId));
+  ref.invalidate(bilhetesRifaProvider(params.rifaId));
+  ref.invalidate(bilhetesVendidosProvider(params.rifaId));
+  ref.invalidate(bilhetesReservadosProvider(params.rifaId));
 });

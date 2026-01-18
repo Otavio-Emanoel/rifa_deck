@@ -449,6 +449,7 @@ class _EdicaoParticipanteSheetState extends ConsumerState<_EdicaoParticipanteShe
           id: widget.participante.id,
           nome: _nomeController.text,
           telefone: _telefoneController.text.isEmpty ? null : _telefoneController.text,
+          rifaId: widget.rifaId,
         )).future,
       );
 
@@ -463,7 +464,10 @@ class _EdicaoParticipanteSheetState extends ConsumerState<_EdicaoParticipanteShe
         }
         if (idsParaRemover.isNotEmpty) {
           await ref.read(
-            removerBilhetesDoParticipanteProvider((bilheteIds: idsParaRemover)).future,
+            removerBilhetesDoParticipanteProvider((
+              bilheteIds: idsParaRemover,
+              rifaId: widget.rifaId,
+            )).future,
           );
         }
       }

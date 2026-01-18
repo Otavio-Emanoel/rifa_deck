@@ -2,6 +2,7 @@ import 'package:riverpod/riverpod.dart';
 import '../services/isar_service.dart';
 import '../models/bilhete.dart';
 import 'rifa_providers.dart';
+import 'participante_providers.dart';
 
 // Provider para obter bilhetes de uma rifa
 final bilhetesRifaProvider = FutureProvider.family<List<Bilhete>, int>((ref, rifaId) async {
@@ -61,6 +62,7 @@ final checkoutVendaProvider = FutureProvider.family<void, ({
   ref.invalidate(bilhetesRifaProvider(params.rifaId));
   ref.invalidate(bilhetesVendidosProvider(params.rifaId));
   ref.invalidate(bilhetesReservadosProvider(params.rifaId));
+  ref.invalidate(participantesRifaProvider(params.rifaId));
 });
 // Provider para sorteio (obtém um bilhete vendido aleatório)
 final sorteioProvider = FutureProvider.family<Bilhete?, int>((ref, rifaId) async {
