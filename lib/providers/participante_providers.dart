@@ -83,3 +83,40 @@ final marcarParticipantePagoProvider = FutureProvider.family<void, int>((ref, pa
   final isarService = ref.watch(isarServiceProvider);
   await isarService.marcarParticipantePago(participanteId);
 });
+
+/// Provider para atualizar dados do participante (nome e telefone)
+final atualizarParticipanteProvider = FutureProvider.family<void, ({
+  int id,
+  String nome,
+  String? telefone,
+})>((ref, params) async {
+  final isarService = ref.watch(isarServiceProvider);
+  final participante = Participante()
+    ..id = params.id
+    ..nome = params.nome
+    ..telefone = params.telefone;
+  await isarService.atualizarParticipante(participante);
+});
+
+/// Provider para adicionar bilhetes a um participante
+final adicionarBilhetesAoParticipanteProvider = FutureProvider.family<void, ({
+  int rifaId,
+  int participanteId,
+  List<int> numerosBilhetes,
+})>((ref, params) async {
+  final isarService = ref.watch(isarServiceProvider);
+  await isarService.atualizarBilhetesCheckout(
+    rifaId: params.rifaId,
+    participanteId: params.participanteId,
+    numerosBilhetes: params.numerosBilhetes,
+    status: 'vendido',
+  );
+});
+
+/// Provider para remover bilhetes de um participante
+final removerBilhetesDoParticipanteProvider = FutureProvider.family<void, ({
+  List<int> bilheteIds,
+})>((ref, params) async {
+  final isarService = ref.watch(isarServiceProvider);
+  await isarService.limparParticipanteDeBilhetes(params.bilheteIds);
+});

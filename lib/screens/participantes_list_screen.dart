@@ -195,6 +195,7 @@ class _ParticipanteListTile extends ConsumerWidget {
       ),
       builder: (_) => _EdicaoParticipanteSheet(
         participante: participante,
+        rifaId: rifaId,
         onSaved: () {
           onParticipanteAtualizado();
           Navigator.pop(context);
@@ -404,10 +405,12 @@ class _DetalhesParticipanteSheet extends StatelessWidget {
 
 class _EdicaoParticipanteSheet extends ConsumerStatefulWidget {
   final ParticipanteComBilhetes participante;
+  final int rifaId;
   final VoidCallback onSaved;
 
   const _EdicaoParticipanteSheet({
     required this.participante,
+    required this.rifaId,
     required this.onSaved,
   });
 
@@ -420,6 +423,8 @@ class _EdicaoParticipanteSheetState extends ConsumerState<_EdicaoParticipanteShe
   late TextEditingController _nomeController;
   late TextEditingController _telefoneController;
   bool _saving = false;
+  Set<int> _bilhetesARemover = {};
+  List<int> _novosBilhetes = [];
 
   @override
   void initState() {
@@ -438,8 +443,31 @@ class _EdicaoParticipanteSheetState extends ConsumerState<_EdicaoParticipanteShe
   Future<void> _salvar() async {
     setState(() => _saving = true);
     try {
-      // TODO: Implementar atualização do participante
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Atualiza nome e telefone
+      await ref.read(
+        atualizarParticipanteProvider((
+          id: widget.participante.id,
+          nome: _nomeController.text,
+          telefone: _telefoneController.text.isEmpty ? null : _telefoneController.text,
+        )).future,
+      );
+
+      // Remove bilhetes selecionados
+      if (_bilhetesARemover.isNotEmpty) {
+        // Precisa buscar os IDs dos bilhetes para remover
+        final bilhetes = await ref.read(bilhetesRifaProvider(widget.rifaId).future);
+        final idsParaRemover = <int>[];
+        for (final numero in _bilhetesARemover) {
+          final bilhete = bilhetes.firstWhere((b) => b.numero == numero);
+          idsParaRemover.add(bilhete.id!);
+        }
+        if (idsParaRemover.isNotEmpty) {
+          await ref.read(
+            removerBilhetesDoParticipanteProvider((bilheteIds: idsParaRemover)).future,
+          );
+        }
+      }
+
       widget.onSaved();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -507,6 +535,107 @@ class _EdicaoParticipanteSheetState extends ConsumerState<_EdicaoParticipanteShe
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Bilhetes (${widget.participante.numeroBilhetes.length})',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                if (_bilhetesARemover.isNotEmpty)
+                  TextButton(
+                    onPressed: () => setState(() => _bilhetesARemover.clear()),
+                    child: const Text('Limpar seleção'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 6,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: widget.participante.numeroBilhetes.length,
+              itemBuilder: (context, index) {
+                final numero = widget.participante.numeroBilhetes[index];
+                final status = widget.participante.statusBilhetes[index];
+                final isSelected = _bilhetesARemover.contains(numero);
+                final chipColor = status == 'vendido' ? Colors.green : Colors.orange;
+
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      if (isSelected) {
+                        _bilhetesARemover.remove(numero);
+                      } else {
+                        _bilhetesARemover.add(numero);
+                      }
+                    });
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.red.withOpacity(.2) : chipColor.withOpacity(.2),
+                      border: Border.all(
+                        color: isSelected ? Colors.red : chipColor,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            numero.toString().padLeft(3, '0'),
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected ? Colors.red : chipColor,
+                                ),
+                          ),
+                          if (isSelected)
+                            Icon(
+                              Icons.close,
+                              size: 14,
+                              color: Colors.red,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            if (_bilhetesARemover.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(.1),
+                  border: Border.all(color: Colors.red.withOpacity(.3)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber, color: Colors.red, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Clique em Salvar para remover ${_bilhetesARemover.length} bilhete(s)',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.red,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,

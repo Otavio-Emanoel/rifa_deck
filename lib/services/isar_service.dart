@@ -456,4 +456,16 @@ class IsarService {
   Future<void> close() async {
     await _db.close();
   }
+
+  /// Remove bilhetes de um participante (limpa participante_id desses bilhetes)
+  Future<void> limparParticipanteDeBilhetes(List<int> bilheteIds) async {
+    for (final id in bilheteIds) {
+      await _db.update(
+        'bilhetes',
+        {'participante_id': null, 'status': 'livre'},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    }
+  }
 }
