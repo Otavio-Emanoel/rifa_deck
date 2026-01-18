@@ -52,6 +52,9 @@ dependencies:
   # Confetti animation
   confetti: ^0.7.0
 
+  # URL launcher for WhatsApp
+  url_launcher: ^6.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
 import 'dart:async';
 import '../models/bilhete.dart';
+import '../models/rifa.dart';
 import '../providers/bilhete_providers.dart';
 import '../providers/participante_providers.dart';
+import '../providers/rifa_providers.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 enum TipoSorteio { simples, multiplo, sequencial }
 
@@ -144,6 +148,249 @@ class _SorteioScreenState extends ConsumerState<SorteioScreen>
       _slotAnimation = null;
       _slotController.reset();
     });
+  }
+
+  Future<void> _mostrarDetalhesGanhador(Bilhete bilhete, int posicao) async {
+    try {
+      final participantes = await ref.read(participantesRifaProvider(widget.rifaId).future);
+      final rifaAsync = ref.read(rifaPorIdProvider(widget.rifaId));
+      
+      final comprador = participantes.firstWhere(
+        (p) => p.numeroBilhetes.contains(bilhete.numero),
+        orElse: () => ParticipanteComBilhetes(
+          id: 0,
+          nome: 'Desconhecido',
+          telefone: null,
+          numeroBilhetes: [],
+          statusBilhetes: [],
+        ),
+      );
+
+      if (!mounted) return;
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => rifaAsync.when(
+          data: (rifa) => _construirModalGanhador(comprador, bilhete, posicao, rifa),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Erro: $e')),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao buscar dados: $e')),
+      );
+    }
+  }
+
+  Widget _construirModalGanhador(
+    ParticipanteComBilhetes comprador,
+    Bilhete bilhete,
+    int posicao,
+    Rifa? rifa,
+  ) {
+    final colocacao = _tipoSorteio == TipoSorteio.sequencial
+        ? posicao == 0 ? '🥇 1º Lugar' : posicao == 1 ? '🥈 2º Lugar' : posicao == 2 ? '🥉 3º Lugar' : '${posicao + 1}º Lugar'
+        : 'Sorteado';
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        top: 24,
+        left: 24,
+        right: 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Ícone de celebração
+          Icon(
+            Icons.emoji_events,
+            size: 64,
+            color: posicao == 0 ? Colors.amber : Colors.green,
+          ),
+          const SizedBox(height: 16),
+          // Colocação
+          Text(
+            colocacao,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: posicao == 0 ? Colors.amber : Colors.green,
+                ),
+          ),
+          const SizedBox(height: 8),
+          // Número do bilhete
+          Chip(
+            label: Text(
+              'Bilhete #${bilhete.numero.toString().padLeft(3, '0')}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: _obterCorPosicao(posicao),
+          ),
+          const SizedBox(height: 24),
+          // Dados do ganhador
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ganhador',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  comprador.nome,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                if (comprador.telefone != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.phone,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        comprador.telefone!,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Botões
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: comprador.telefone != null
+                  ? () => _enviarMensagemParabens(comprador, bilhete, posicao, rifa)
+                  : null,
+              icon: const Icon(Icons.send),
+              label: const Text('Enviar Mensagem de Parabéns'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _copiarMensagemParabens(comprador, bilhete, posicao, rifa),
+              icon: const Icon(Icons.copy),
+              label: const Text('Copiar Mensagem'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  void _enviarMensagemParabens(
+    ParticipanteComBilhetes comprador,
+    Bilhete bilhete,
+    int posicao,
+    Rifa? rifa,
+  ) async {
+    final mensagem = _gerarMensagemParabens(comprador, bilhete, posicao, rifa);
+    final telefone = comprador.telefone!.replaceAll(RegExp(r'\D'), '');
+    
+    final url = Uri.parse('https://wa.me/55$telefone?text=${Uri.encodeComponent(mensagem)}');
+    
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível abrir o WhatsApp')),
+        );
+      }
+    }
+  }
+
+  void _copiarMensagemParabens(
+    ParticipanteComBilhetes comprador,
+    Bilhete bilhete,
+    int posicao,
+    Rifa? rifa,
+  ) {
+    final mensagem = _gerarMensagemParabens(comprador, bilhete, posicao, rifa);
+    Clipboard.setData(ClipboardData(text: mensagem));
+    
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Mensagem copiada para a área de transferência!')),
+    );
+  }
+
+  String _gerarMensagemParabens(
+    ParticipanteComBilhetes comprador,
+    Bilhete bilhete,
+    int posicao,
+    Rifa? rifa,
+  ) {
+    final rifaNome = rifa?.titulo ?? widget.rifaTitulo ?? 'Rifa';
+    final premio = rifa?.descricao ?? 'prêmio';
+    
+    final colocacaoTexto = _tipoSorteio == TipoSorteio.sequencial
+        ? posicao == 0
+            ? '🥇 *1º LUGAR* 🥇'
+            : posicao == 1
+                ? '🥈 *2º LUGAR* 🥈'
+                : posicao == 2
+                    ? '🥉 *3º LUGAR* 🥉'
+                    : '*${posicao + 1}º LUGAR*'
+        : '🎉 *GANHADOR* 🎉';
+
+    return '''
+🎊 *PARABÉNS ${comprador.nome.toUpperCase()}!* 🎊
+
+$colocacaoTexto
+
+Você foi sorteado(a) na rifa:
+📌 *$rifaNome*
+
+🎁 Prêmio: *$premio*
+🎫 Bilhete: *#${bilhete.numero.toString().padLeft(3, '0')}*
+
+Parabéns pela sorte! 🍀
+''';
   }
 
   @override
@@ -562,6 +809,26 @@ class _SorteioScreenState extends ConsumerState<SorteioScreen>
                 return _construirChipSorteado(indice, bilhete, colorScheme);
               }).toList(),
             ),
+            const SizedBox(height: 12),
+            // Dica
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Toque no número para ver detalhes e enviar mensagem',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
+              ],
+            ),
             const SizedBox(height: 32),
             // Botões de ação
             SizedBox(
@@ -602,14 +869,18 @@ class _SorteioScreenState extends ConsumerState<SorteioScreen>
         ? ' ${bilhete.numero.toString().padLeft(3, '0')}'
         : ' (${indice + 1}º)';
 
-    return Chip(
-      label: Text(
-        '$prefixo$sufixo',
-        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+    return InkWell(
+      onTap: () => _mostrarDetalhesGanhador(bilhete, indice),
+      borderRadius: BorderRadius.circular(16),
+      child: Chip(
+        label: Text(
+          '$prefixo$sufixo',
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        backgroundColor: _obterCorPosicao(indice),
+        onDeleted: () => _removerDaSorteio(bilhete.numero),
+        deleteIcon: const Icon(Icons.close, size: 18, color: Colors.white70),
       ),
-      backgroundColor: _obterCorPosicao(indice),
-      onDeleted: () => _removerDaSorteio(bilhete.numero),
-      deleteIcon: const Icon(Icons.close, size: 18),
     );
   }
 
