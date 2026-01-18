@@ -12,46 +12,73 @@ class HomeScreen extends ConsumerWidget {
     final rifasAsync = ref.watch(rifasAtivasProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('🎟️ Rifa_Deck'),
-        elevation: 0,
-      ),
-      body: rifasAsync.when(
-        data: (rifas) {
-          if (rifas.isEmpty) {
-            return _EmptyState();
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: rifas.length,
-            itemBuilder: (context, index) {
-              final rifa = rifas[index];
-
-              // Busca dados de bilhetes para este card
-              return _RifaCardWithData(rifa: rifa);
-            },
-          );
-        },
-        loading: () {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        },
-        error: (error, stackTrace) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error, size: 48, color: Colors.red),
-                const SizedBox(height: 16),
-                Text('Erro ao carregar rifas'),
-                const SizedBox(height: 8),
-                Text(error.toString()),
-              ],
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                        Theme.of(context).colorScheme.secondary.withOpacity(0.03),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-          );
-        },
+            rifasAsync.when(
+              data: (rifas) {
+                return CustomScrollView(
+                  slivers: [
+                    const SliverToBoxAdapter(child: _HomeHeader()),
+                    if (rifas.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _EmptyState(),
+                      )
+                    else ...[
+                      const SliverToBoxAdapter(child: _QuickActions()),
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final rifa = rifas[index];
+                            return _RifaCardWithData(rifa: rifa);
+                          },
+                          childCount: rifas.length,
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+              loading: () {
+                return const Center(
+                  child: _GradientLoading(),
+                );
+              },
+              error: (error, stackTrace) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error, size: 48, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text('Erro ao carregar rifas'),
+                      const SizedBox(height: 8),
+                      Text(error.toString()),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -107,30 +134,316 @@ class _RifaCardWithData extends ConsumerWidget {
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: colorScheme.surface.withOpacity(.8),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.auto_awesome_motion,
+                size: 64,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Nenhuma rifa criada',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Comece uma campanha em segundos e acompanhe vendas em tempo real.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
+                  );
+                },
+                icon: const Icon(Icons.add_circle_outline),
+                label: const Text('Criar primeira rifa'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.event_note,
-            size: 64,
-            color: Colors.grey[400],
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primary.withOpacity(.12),
+                  colorScheme.secondary.withOpacity(.12),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Hero(
+                  tag: 'app_logo',
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 14,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: Image.asset(
+                        'assets/images/app_logo.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: colorScheme.surfaceVariant,
+                          child: Icon(
+                            Icons.local_activity,
+                            color: colorScheme.primary,
+                            size: 36,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'RifaDeck',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Sua central de rifas com vendas, reservas e sorteios inteligentes.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey[1000]?.withOpacity(0.75),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
-          Text(
-            'Nenhuma rifa criada',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
-          ),
+          const _HeaderStats(),
           const SizedBox(height: 8),
-          Text(
-            'Crie sua primeira rifa para começar',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[500],
-                ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderStats extends StatelessWidget {
+  const _HeaderStats();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: const [
+        Expanded(
+          child: _GlassStat(
+            label: 'Campanhas',
+            value: '—',
+            icon: Icons.layers,
+          ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: _GlassStat(
+            label: 'Vendas',
+            value: '—',
+            icon: Icons.shopping_bag,
+          ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: _GlassStat(
+            label: 'Reservas',
+            value: '—',
+            icon: Icons.schedule,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GlassStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  const _GlassStat({required this.label, required this.value, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withOpacity(.75),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withOpacity(.08)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 10),
           ),
         ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 20, color: colorScheme.primary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                ),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActions extends StatelessWidget {
+  const _QuickActions();
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      (Icons.add_circle, 'Nova Rifa'),
+      (Icons.qr_code_2, 'Vender'),
+      (Icons.insights, 'Relatórios'),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Row(
+        children: items
+            .map(
+              (e) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('${e.$2} em desenvolvimento')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(.12),
+                      foregroundColor: Theme.of(context).colorScheme.primary,
+                      elevation: 0,
+                    ),
+                    icon: Icon(e.$1),
+                    label: Text(e.$2),
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _GradientLoading extends StatelessWidget {
+  const _GradientLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 72,
+      child: LinearProgressIndicator(
+        minHeight: 6,
+        borderRadius: BorderRadius.circular(999),
+        valueColor: AlwaysStoppedAnimation(colorScheme.primary),
+        backgroundColor: colorScheme.primary.withOpacity(.15),
       ),
     );
   }
