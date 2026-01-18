@@ -468,4 +468,20 @@ class IsarService {
       );
     }
   }
+
+  /// Remove uma rifa e todos os seus bilhetes
+  Future<void> removerRifa(int rifaId) async {
+    // Remove todos os bilhetes da rifa
+    await _db.delete(
+      'bilhetes',
+      where: 'rifa_id = ?',
+      whereArgs: [rifaId],
+    );
+    // Remove a rifa
+    await _db.delete(
+      'rifas',
+      where: 'id = ?',
+      whereArgs: [rifaId],
+    );
+  }
 }

@@ -48,3 +48,9 @@ final rifaPorIdProvider = FutureProvider.family<Rifa?, int>((ref, rifaId) async 
   final isarService = ref.watch(isarServiceProvider);
   return await isarService.obterRifaPorId(rifaId);
 });
+
+// Provider para remover uma rifa
+final removerRifaProvider = FutureProvider.family<void, int>((ref, rifaId) async {
+  final isarService = ref.watch(isarServiceProvider);
+  await isarService.removerRifa(rifaId);
+});

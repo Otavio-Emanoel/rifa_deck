@@ -7,6 +7,7 @@ import 'create_rifa_screen.dart';
 import 'rifa_vendas_grid_screen.dart';
 import 'participantes_list_screen.dart';
 import 'sorteio_screen.dart';
+import 'relatorios_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -546,8 +547,8 @@ class _QuickActions extends StatelessWidget {
         );
       }),
       (Icons.insights, 'Relatórios', () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Relatórios em desenvolvimento')),
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const RelatoriosScreen()),
         );
       }),
     ];

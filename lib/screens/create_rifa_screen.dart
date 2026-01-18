@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/rifa_providers.dart';
 
 class CreateRifaScreen extends ConsumerStatefulWidget {
-  const CreateRifaScreen({super.key});
+  final dynamic rifaParaEditar;
+
+  const CreateRifaScreen({super.key, this.rifaParaEditar});
 
   @override
   ConsumerState<CreateRifaScreen> createState() => _CreateRifaScreenState();
@@ -13,9 +15,23 @@ class _CreateRifaScreenState extends ConsumerState<CreateRifaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nomeController = TextEditingController();
   final _premioController = TextEditingController();
-  final _quantidadeController = TextEditingController(text: '100');
-  final _valorController = TextEditingController(text: '10.00');
+  final _quantidadeController = TextEditingController();
+  final _valorController = TextEditingController();
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.rifaParaEditar != null) {
+      _nomeController.text = widget.rifaParaEditar.titulo;
+      _premioController.text = widget.rifaParaEditar.descricao ?? '';
+      _quantidadeController.text = widget.rifaParaEditar.totalBilhetes.toString();
+      _valorController.text = widget.rifaParaEditar.valorBilhete.toStringAsFixed(2);
+    } else {
+      _quantidadeController.text = '100';
+      _valorController.text = '10.00';
+    }
+  }
 
   @override
   void dispose() {
@@ -36,22 +52,40 @@ class _CreateRifaScreenState extends ConsumerState<CreateRifaScreen> {
       final quantidade = int.parse(_quantidadeController.text.trim());
       final valor = double.parse(_valorController.text.replaceAll(',', '.').trim());
 
-      final rifaId = await service.criarRifa(
-        titulo: titulo,
-        descricao: premio.isEmpty ? null : premio,
-        totalBilhetes: quantidade,
-        valorBilhete: valor,
-      );
+      if (widget.rifaParaEditar != null) {
+        // Editar rifa existente
+        final rifa = widget.rifaParaEditar;
+        rifa.titulo = titulo;
+        rifa.descricao = premio.isEmpty ? null : premio;
+        rifa.valorBilhete = valor;
+        await service.atualizarRifa(rifa);
 
-      await service.criarBilhetes(rifaId, quantidade);
-
-      // Atualiza a lista de rifas na Home
-      ref.invalidate(rifasAtivasProvider);
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rifa criada com sucesso!')),
+        ref.invalidate(rifasAtivasProvider);
+        if (mounted) {
+          Navigator.pop(context, true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Rifa atualizada com sucesso!')),
+          );
+        }
+      } else {
+        // Criar nova rifa
+        final rifaId = await service.criarRifa(
+          titulo: titulo,
+          descricao: premio.isEmpty ? null : premio,
+          totalBilhetes: quantidade,
+          valorBilhete: valor,
         );
+
+        await service.criarBilhetes(rifaId, quantidade);
+
+        // Atualiza a lista de rifas na Home
+        ref.invalidate(rifasAtivasProvider);
+        if (mounted) {
+          Navigator.pop(context, true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Rifa criada com sucesso!')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -69,9 +103,10 @@ class _CreateRifaScreenState extends ConsumerState<CreateRifaScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isEditing = widget.rifaParaEditar != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nova Rifa'),
+        title: Text(isEditing ? 'Editar Rifa' : 'Nova Rifa'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -82,7 +117,7 @@ class _CreateRifaScreenState extends ConsumerState<CreateRifaScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Setup da campanha',
+                  isEditing ? 'Atualizar campanha' : 'Setup da campanha',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
