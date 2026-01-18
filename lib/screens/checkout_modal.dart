@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../providers/bilhete_providers.dart';
 import '../providers/selection_providers.dart';
+import '../providers/participante_providers.dart';
 
 class CheckoutModal extends ConsumerStatefulWidget {
   final int rifaId;
@@ -28,6 +29,8 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
   final _telefoneController = TextEditingController();
   bool _pago = false;
   bool _saving = false;
+  int? _participanteEscolhidoId;
+  bool _isNovoParticipante = true;
 
   final _telefoneMask = MaskTextInputFormatter(
     mask: '(##) #####-####',
@@ -39,6 +42,24 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
     _nomeController.dispose();
     _telefoneController.dispose();
     super.dispose();
+  }
+
+  void _selecionarParticipante(int id, String nome, String? telefone) {
+    setState(() {
+      _participanteEscolhidoId = id;
+      _nomeController.text = nome;
+      _telefoneController.text = telefone ?? '';
+      _isNovoParticipante = false;
+    });
+  }
+
+  void _limparSelecao() {
+    setState(() {
+      _participanteEscolhidoId = null;
+      _nomeController.clear();
+      _telefoneController.clear();
+      _isNovoParticipante = true;
+    });
   }
 
   Future<void> _confirmar() async {
@@ -81,6 +102,8 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final participantesAsync = ref.watch(participantesRifaProvider(widget.rifaId));
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -119,6 +142,101 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
                   ),
             ),
             const SizedBox(height: 20),
+            // Lista de compradores existentes
+            participantesAsync.when(
+              data: (participantes) {
+                if (participantes.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Compradores Existentes',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: participantes.length,
+                        itemBuilder: (context, index) {
+                          final p = participantes[index];
+                          final isSelected = _participanteEscolhidoId == p.id;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: GestureDetector(
+                              onTap: () => _selecionarParticipante(p.id, p.nome, p.telefone),
+                              child: Container(
+                                width: 120,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? colorScheme.primary.withOpacity(.2)
+                                      : colorScheme.surfaceVariant,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? colorScheme.primary
+                                        : colorScheme.outline.withOpacity(.3),
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      p.nome,
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    if (p.telefone != null)
+                                      Text(
+                                        p.telefone!,
+                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                              color: colorScheme.primary,
+                                            ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    const Spacer(),
+                                    Text(
+                                      '${p.numeroBilhetes.length} bilhetes',
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_participanteEscolhidoId != null)
+                      TextButton.icon(
+                        onPressed: _limparSelecao,
+                        icon: const Icon(Icons.clear),
+                        label: const Text('Novo Comprador'),
+                      ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+            // Formulário
             Form(
               key: _formKey,
               child: Column(
