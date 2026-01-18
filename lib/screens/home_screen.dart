@@ -5,6 +5,7 @@ import '../providers/bilhete_providers.dart';
 import '../widgets/rifa_card.dart';
 import 'create_rifa_screen.dart';
 import 'rifa_vendas_grid_screen.dart';
+import 'participantes_list_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -125,6 +126,16 @@ class _RifaCardWithData extends ConsumerWidget {
                     builder: (_) => RifaVendasGridScreen(
                       rifaId: rifa.id!,
                       titulo: rifa.titulo,
+                    ),
+                  ),
+                );
+              },
+              onTapCompradores: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ParticipantesListScreen(
+                      rifaId: rifa.id!,
+                      rifaTitulo: rifa.titulo,
                     ),
                   ),
                 );

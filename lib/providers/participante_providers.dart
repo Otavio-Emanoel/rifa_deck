@@ -30,3 +30,56 @@ final criarParticipanteProvider = FutureProvider.family<int, ({
     notas: params.notas,
   );
 });
+/// Modelo simples para participante com bilhetes
+class ParticipanteComBilhetes {
+  final int id;
+  final String nome;
+  final String? telefone;
+  final List<int> numeroBilhetes;
+  final List<String> statusBilhetes;
+
+  ParticipanteComBilhetes({
+    required this.id,
+    required this.nome,
+    required this.telefone,
+    required this.numeroBilhetes,
+    required this.statusBilhetes,
+  });
+
+  bool get temPendente => statusBilhetes.contains('reservado');
+  bool get todosPagos => !temPendente;
+
+  String get descricao {
+    final qtd = numeroBilhetes.length;
+    final status = todosPagos ? 'Pago' : 'Pendente';
+    final numeros = numeroBilhetes.join(', ');
+    return 'Bilhetes: $numeros ($status)';
+  }
+}
+
+/// Provider para listar participantes de uma rifa com seus bilhetes
+final participantesRifaProvider =
+    FutureProvider.family<List<ParticipanteComBilhetes>, int>((ref, rifaId) async {
+  final isarService = ref.watch(isarServiceProvider);
+  final rawData = await isarService.obterParticipantesRifaComBilhetes(rifaId);
+
+  return rawData.map((row) {
+    final numerosStr = (row['bilhete_numeros'] as String).split(',');
+    final statusesStr = (row['bilhete_statuses'] as String).split(',');
+    final numeros = numerosStr.map((n) => int.parse(n.trim())).toList();
+
+    return ParticipanteComBilhetes(
+      id: row['id'] as int,
+      nome: row['nome'] as String,
+      telefone: row['telefone'] as String?,
+      numeroBilhetes: numeros,
+      statusBilhetes: statusesStr,
+    );
+  }).toList();
+});
+
+/// Provider para atualizar participante como pago
+final marcarParticipantePagoProvider = FutureProvider.family<void, int>((ref, participanteId) async {
+  final isarService = ref.watch(isarServiceProvider);
+  await isarService.marcarParticipantePago(participanteId);
+});

@@ -6,6 +6,7 @@ class RifaCard extends StatelessWidget {
   final int bilhetesVendidos;
   final int bilhetesReservados;
   final VoidCallback onTapAcao;
+  final VoidCallback? onTapCompradores;
 
   const RifaCard({
     Key? key,
@@ -13,6 +14,7 @@ class RifaCard extends StatelessWidget {
     required this.bilhetesVendidos,
     required this.bilhetesReservados,
     required this.onTapAcao,
+    this.onTapCompradores,
   }) : super(key: key);
 
   @override
@@ -118,18 +120,31 @@ class RifaCard extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Botão de ação
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: onTapAcao,
-                icon: const Icon(Icons.shopping_cart),
-                label: const Text('Vender Bilhetes'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
+            // Botões de ação
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: onTapAcao,
+                    icon: const Icon(Icons.shopping_cart),
+                    label: const Text('Vender'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                if (onTapCompradores != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onTapCompradores,
+                      icon: const Icon(Icons.people),
+                      label: const Text('Compradores'),
+                    ),
+                  ),
+              ],
             ),
           ],
         ),

@@ -310,10 +310,40 @@ class IsarService {
       'participantes',
       {
         'nome': participante.nome,
+        'telefone': participante.telefone,
+        'email': participante.email,
         'dataAtualizacao': DateTime.now().toIso8601String(),
       },
       where: 'id = ?',
       whereArgs: [participante.id],
+    );
+  }
+
+  /// Obtém todos os participantes que têm bilhetes em uma rifa específica
+  Future<List<Map<String, dynamic>>> obterParticipantesRifaComBilhetes(int rifaId) async {
+    final result = await _db.rawQuery('''
+      SELECT DISTINCT p.*, GROUP_CONCAT(b.numero) as bilhete_numeros, 
+             GROUP_CONCAT(b.status) as bilhete_statuses
+      FROM participantes p
+      INNER JOIN bilhetes b ON p.id = b.participanteId
+      WHERE b.rifaId = ?
+      GROUP BY p.id
+      ORDER BY p.nome ASC
+    ''', [rifaId]);
+    return result;
+  }
+
+  /// Marca todos os bilhetes reservados de um participante como vendidos
+  Future<void> marcarParticipantePago(int participanteId) async {
+    final now = DateTime.now().toIso8601String();
+    await _db.update(
+      'bilhetes',
+      {
+        'status': 'vendido',
+        'dataAtualizacao': now,
+      },
+      where: 'participanteId = ? AND status = ?',
+      whereArgs: [participanteId, 'reservado'],
     );
   }
 
