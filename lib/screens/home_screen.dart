@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/rifa_providers.dart';
 import '../providers/bilhete_providers.dart';
 import '../widgets/rifa_card.dart';
+import 'create_rifa_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -81,11 +82,15 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Navegar para tela de criar rifa
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
+        onPressed: () async {
+          final created = await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CreateRifaScreen()),
           );
+          if (created == true && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Rifa criada!')),
+            );
+          }
         },
         icon: const Icon(Icons.add),
         label: const Text('Nova Rifa'),
@@ -175,9 +180,9 @@ class _EmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CreateRifaScreen()),
                   );
                 },
                 icon: const Icon(Icons.add_circle_outline),
@@ -395,9 +400,21 @@ class _QuickActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      (Icons.add_circle, 'Nova Rifa'),
-      (Icons.qr_code_2, 'Vender'),
-      (Icons.insights, 'Relatórios'),
+      (Icons.add_circle, 'Nova Rifa', () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const CreateRifaScreen()),
+        );
+      }),
+      (Icons.qr_code_2, 'Vender', () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vender em desenvolvimento')),
+        );
+      }),
+      (Icons.insights, 'Relatórios', () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Relatórios em desenvolvimento')),
+        );
+      }),
     ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -408,11 +425,7 @@ class _QuickActions extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('${e.$2} em desenvolvimento')),
-                      );
-                    },
+                    onPressed: e.$3,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(.12),
