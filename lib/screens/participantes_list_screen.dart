@@ -108,12 +108,45 @@ class _ParticipanteListTile extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 4),
-          Text(
-            participante.descricao,
-            style: Theme.of(context).textTheme.bodySmall,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          if (participante.bilhetesPagos.isNotEmpty) ...[
+            Row(
+              children: [
+                Icon(Icons.check_circle, size: 14, color: Colors.green),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    participante.bilhetesPagos.map((n) => n.toString().padLeft(3, '0')).join(', '),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (participante.bilhetesPendentes.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Icon(Icons.schedule, size: 14, color: Colors.orange),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    participante.bilhetesPendentes.map((n) => n.toString().padLeft(3, '0')).join(', '),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.orange.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (participante.telefone != null) ...[
             const SizedBox(height: 4),
             Text(

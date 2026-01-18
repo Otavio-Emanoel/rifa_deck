@@ -29,4 +29,28 @@ class Bilhete {
 
   @override
   String toString() => 'Bilhete(numero: $numero, status: $status)';
+
+  Bilhete copyWith({
+    int? id,
+    int? rifaId,
+    int? numero,
+    BilheteStatus? status,
+    int? participanteId,
+    bool clearParticipanteId = false,
+    DateTime? dataVenda,
+    String? observacoes,
+    DateTime? dataCriacao,
+    DateTime? dataAtualizacao,
+  }) {
+    return Bilhete()
+      ..id = id ?? this.id
+      ..rifaId = rifaId ?? this.rifaId
+      ..numero = numero ?? this.numero
+      ..status = status ?? this.status
+      ..participanteId = clearParticipanteId ? null : (participanteId ?? this.participanteId)
+      ..dataVenda = dataVenda ?? this.dataVenda
+      ..observacoes = observacoes ?? this.observacoes
+      ..dataCriacao = dataCriacao ?? this.dataCriacao
+      ..dataAtualizacao = dataAtualizacao ?? this.dataAtualizacao;
+  }
 }

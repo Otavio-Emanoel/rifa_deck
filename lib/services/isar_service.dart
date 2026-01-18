@@ -457,12 +457,40 @@ class IsarService {
     await _db.close();
   }
 
-  /// Remove bilhetes de um participante (limpa participante_id desses bilhetes)
+  String _statusToString(BilheteStatus status) {
+    return status.name;
+  }
+
+  Future<Bilhete?> obterBilhetePorId(int id) async {
+    final result = await _db.query(
+      'bilhetes',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isEmpty) return null;
+    return _bilheteFromMap(result.first);
+  }
+
+  Future<void> atualizarBilhete(Bilhete bilhete) async {
+    final now = DateTime.now().toIso8601String();
+    await _db.update(
+      'bilhetes',
+      {
+        'status': _statusToString(bilhete.status),
+        'participanteId': bilhete.participanteId,
+        'dataAtualizacao': now,
+      },
+      where: 'id = ?',
+      whereArgs: [bilhete.id],
+    );
+  }
+
+  /// Remove bilhetes de um participante (limpa participanteId desses bilhetes)
   Future<void> limparParticipanteDeBilhetes(List<int> bilheteIds) async {
     for (final id in bilheteIds) {
       await _db.update(
         'bilhetes',
-        {'participante_id': null, 'status': 'livre'},
+        {'participanteId': null, 'status': 'livre'},
         where: 'id = ?',
         whereArgs: [id],
       );
@@ -474,7 +502,7 @@ class IsarService {
     // Remove todos os bilhetes da rifa
     await _db.delete(
       'bilhetes',
-      where: 'rifa_id = ?',
+      where: 'rifaId = ?',
       whereArgs: [rifaId],
     );
     // Remove a rifa
@@ -483,5 +511,14 @@ class IsarService {
       where: 'id = ?',
       whereArgs: [rifaId],
     );
+  }
+
+  /// Obtém o participante associado a um bilhete
+  Future<Participante?> obterParticipanteComBilhete(int bilheteId) async {
+    final bilhete = await obterBilhetePorId(bilheteId);
+    if (bilhete == null || bilhete.participanteId == null) {
+      return null;
+    }
+    return await obterParticipantePorId(bilhete.participanteId!);
   }
 }

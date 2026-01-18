@@ -50,11 +50,38 @@ class ParticipanteComBilhetes {
   bool get temPendente => statusBilhetes.contains('reservado');
   bool get todosPagos => !temPendente;
 
+  List<int> get bilhetesPagos {
+    final pagos = <int>[];
+    for (int i = 0; i < numeroBilhetes.length; i++) {
+      if (statusBilhetes[i] == 'vendido') {
+        pagos.add(numeroBilhetes[i]);
+      }
+    }
+    return pagos;
+  }
+
+  List<int> get bilhetesPendentes {
+    final pendentes = <int>[];
+    for (int i = 0; i < numeroBilhetes.length; i++) {
+      if (statusBilhetes[i] == 'reservado') {
+        pendentes.add(numeroBilhetes[i]);
+      }
+    }
+    return pendentes;
+  }
+
   String get descricao {
-    final qtd = numeroBilhetes.length;
-    final status = todosPagos ? 'Pago' : 'Pendente';
-    final numeros = numeroBilhetes.join(', ');
-    return 'Bilhetes: $numeros ($status)';
+    final pagos = bilhetesPagos;
+    final pendentes = bilhetesPendentes;
+    
+    final partes = <String>[];
+    if (pagos.isNotEmpty) {
+      partes.add('✅ ${pagos.map((n) => n.toString().padLeft(3, '0')).join(', ')}');
+    }
+    if (pendentes.isNotEmpty) {
+      partes.add('⏳ ${pendentes.map((n) => n.toString().padLeft(3, '0')).join(', ')}');
+    }
+    return partes.join(' | ');
   }
 }
 
