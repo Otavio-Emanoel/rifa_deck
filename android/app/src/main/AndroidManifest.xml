@@ -6,7 +6,7 @@
         tools:ignore="QueryAllPackagesPermission" />
     
     <application
-        android:label="controle_rifas"
+        android:label="Rifa Deck"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true">

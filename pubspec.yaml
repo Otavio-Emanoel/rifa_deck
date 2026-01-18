@@ -1,5 +1,5 @@
 name: controle_rifas
-description: "A new Flutter project."
+description: "Rifa Deck - Gerenciador de Rifas"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -81,6 +81,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/app_logo.png
+    - assets/images/developer.jpg
 
 flutter_launcher_icons:
   android: true
