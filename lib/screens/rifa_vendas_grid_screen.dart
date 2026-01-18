@@ -5,6 +5,7 @@ import '../models/enums.dart';
 import '../providers/bilhete_providers.dart';
 import '../providers/rifa_providers.dart';
 import '../providers/selection_providers.dart';
+import 'checkout_modal.dart';
 
 class RifaVendasGridScreen extends ConsumerWidget {
   final int rifaId;
@@ -63,9 +64,18 @@ class RifaVendasGridScreen extends ConsumerWidget {
             total: total,
             onLimpar: () => ref.read(selecionadosProvider(rifaId).notifier).clear(),
             onVender: () {
-              // TODO: integrar fluxo de venda/participante
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Vender ${selecionados.length} números (R\$ ${total.toStringAsFixed(2)})')),
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (_) => CheckoutModal(
+                  rifaId: rifaId,
+                  quantidade: selecionados.length,
+                  total: total,
+                  numerosBilhetes: selecionados.toList(),
+                ),
               );
             },
           );

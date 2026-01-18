@@ -37,3 +37,28 @@ final venderBilhetesProvider = FutureProvider.family<void, ({
   ref.invalidate(bilhetesRifaProvider(params.rifaId));
   ref.invalidate(bilhetesVendidosProvider(params.rifaId));
 });
+// Provider para o checkout/finalização de venda
+final checkoutVendaProvider = FutureProvider.family<void, ({
+  int rifaId,
+  String nomeComprador,
+  String? telefone,
+  List<int> numerosBilhetes,
+  bool pago,
+})>((ref, params) async {
+  final isarService = ref.watch(isarServiceProvider);
+  final participanteId = await isarService.obterOuCriarParticipante(
+    nome: params.nomeComprador,
+    telefone: params.telefone,
+  );
+  final status = params.pago ? 'vendido' : 'reservado';
+  await isarService.atualizarBilhetesCheckout(
+    rifaId: params.rifaId,
+    participanteId: participanteId,
+    numerosBilhetes: params.numerosBilhetes,
+    status: status,
+  );
+  // Invalida o cache para recarregar
+  ref.invalidate(bilhetesRifaProvider(params.rifaId));
+  ref.invalidate(bilhetesVendidosProvider(params.rifaId));
+  ref.invalidate(bilhetesReservadosProvider(params.rifaId));
+});

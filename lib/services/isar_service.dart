@@ -225,6 +225,51 @@ class IsarService {
     await batch.commit();
   }
 
+  /// Busca participante por nome, ou cria um novo se não existir
+  Future<int> obterOuCriarParticipante({
+    required String nome,
+    String? telefone,
+  }) async {
+    final result = await _db.query(
+      'participantes',
+      where: 'nome = ?',
+      whereArgs: [nome.trim()],
+    );
+    if (result.isNotEmpty) {
+      return result.first['id'] as int;
+    }
+    return await criarParticipante(
+      nome: nome.trim(),
+      telefone: telefone?.trim(),
+    );
+  }
+
+  /// Atualiza bilhetes com participante e status (vendido ou reservado)
+  Future<void> atualizarBilhetesCheckout({
+    required int rifaId,
+    required int participanteId,
+    required List<int> numerosBilhetes,
+    required String status, // 'vendido' ou 'reservado'
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    final batch = _db.batch();
+    
+    for (var numero in numerosBilhetes) {
+      batch.update(
+        'bilhetes',
+        {
+          'status': status,
+          'participanteId': participanteId,
+          'dataVenda': now,
+          'dataAtualizacao': now,
+        },
+        where: 'rifaId = ? AND numero = ? AND status = ?',
+        whereArgs: [rifaId, numero, 'livre'],
+      );
+    }
+    await batch.commit();
+  }
+
   // ========== PARTICIPANTES ==========
 
   Future<int> criarParticipante({

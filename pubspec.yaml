@@ -46,6 +46,9 @@ dependencies:
   # Temporary: SQLite instead of Isar
   sqflite: ^2.3.0
 
+  # Phone number mask formatter
+  mask_text_input_formatter: ^2.8.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
