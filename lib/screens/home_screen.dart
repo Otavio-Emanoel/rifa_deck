@@ -4,6 +4,7 @@ import '../providers/rifa_providers.dart';
 import '../providers/bilhete_providers.dart';
 import '../widgets/rifa_card.dart';
 import 'create_rifa_screen.dart';
+import 'rifa_vendas_grid_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -119,9 +120,13 @@ class _RifaCardWithData extends ConsumerWidget {
               bilhetesVendidos: bilhetesVendidos.length,
               bilhetesReservados: bilhetesReservados.length,
               onTapAcao: () {
-                // TODO: Navegar para tela de venda de bilhetes
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Abrindo venda para ${rifa.titulo}')),
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => RifaVendasGridScreen(
+                      rifaId: rifa.id!,
+                      titulo: rifa.titulo,
+                    ),
+                  ),
                 );
               },
             );
