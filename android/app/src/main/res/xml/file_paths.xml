@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Permite compartilhar arquivos do cache -->
+    <cache-path name="cache" path="." />
+    
+    <!-- Permite compartilhar arquivos da pasta externa -->
+    <external-path name="external" path="." />
+    
+    <!-- Permite compartilhar arquivos do diretório de arquivos externos -->
+    <external-files-path name="external_files" path="." />
+    
+    <!-- Permite compartilhar arquivos do diretório interno -->
+    <files-path name="files" path="." />
+</paths>

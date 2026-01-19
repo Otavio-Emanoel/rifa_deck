@@ -283,6 +283,27 @@ class IsarService {
     await batch.commit();
   }
 
+  /// Atualiza bilhete para importação (sem verificar status atual)
+  Future<void> atualizarBilheteImportacao({
+    required int rifaId,
+    required int participanteId,
+    required int numero,
+    required String status,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    await _db.update(
+      'bilhetes',
+      {
+        'status': status,
+        'participanteId': participanteId,
+        'dataVenda': now,
+        'dataAtualizacao': now,
+      },
+      where: 'rifaId = ? AND numero = ?',
+      whereArgs: [rifaId, numero],
+    );
+  }
+
   // ========== PARTICIPANTES ==========
 
   Future<int> criarParticipante({

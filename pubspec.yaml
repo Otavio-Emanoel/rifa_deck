@@ -55,6 +55,10 @@ dependencies:
   # URL launcher for WhatsApp
   url_launcher: ^6.2.0
 
+  # Share and File Picker for export/import
+  share_plus: ^10.0.0
+  file_picker: ^8.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
